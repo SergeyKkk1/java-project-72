@@ -16,7 +16,7 @@ public final class App {
 
     public static void main(String[] args) {
         var app = getApp();
-
-        app.start();
+        var port = Integer.parseInt(System.getenv().getOrDefault("PORT", "7000"));
+        app.start(port);
     }
 }
