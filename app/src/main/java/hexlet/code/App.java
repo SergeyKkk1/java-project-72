@@ -2,7 +2,11 @@ package hexlet.code;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import gg.jte.ContentType;
+import gg.jte.TemplateEngine;
+import gg.jte.resolve.ResourceCodeResolver;
 import io.javalin.Javalin;
+import io.javalin.rendering.template.JavalinJte;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -17,7 +21,7 @@ public final class App {
     private static final int DB_MAX_POOL_SIZE = 10;
     private static final int DB_MIN_IDLE = 1;
     private static final String ROOT_PATH = "/";
-    private static final String ROOT_RESPONSE = "Hello World";
+    private static final String ROOT_TEMPLATE = "index.jte";
 
     private static HikariDataSource dataSource;
 
@@ -26,8 +30,8 @@ public final class App {
 
     public static Javalin getApp() {
         getDataSource();
-        var app = Javalin.create();
-        app.get(ROOT_PATH, ctx -> ctx.result(ROOT_RESPONSE));
+        var app = Javalin.create(config -> config.fileRenderer(new JavalinJte(createTemplateEngine())));
+        app.get(ROOT_PATH, ctx -> ctx.render(ROOT_TEMPLATE));
         return app;
     }
 
@@ -55,5 +59,11 @@ public final class App {
         var app = getApp();
         var port = Integer.parseInt(System.getenv().getOrDefault(PORT_ENV, DEFAULT_PORT));
         app.start(port);
+    }
+
+    private static TemplateEngine createTemplateEngine() {
+        ClassLoader classLoader = App.class.getClassLoader();
+        ResourceCodeResolver codeResolver = new ResourceCodeResolver("templates", classLoader);
+        return TemplateEngine.create(codeResolver, ContentType.Html);
     }
 }
