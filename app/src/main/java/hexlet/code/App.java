@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public final class App {
+    private static final String APP_ENV_PROPERTY = "app.env";
+    private static final String TEST_ENV = "test";
     private static final String JDBC_DATABASE_URL_ENV = "JDBC_DATABASE_URL";
     private static final String PORT_ENV = "PORT";
     private static final String DEFAULT_PORT = "7000";
@@ -46,7 +48,9 @@ public final class App {
         if (dataSource == null) {
             var config = new HikariConfig();
             var databaseUrl = System.getenv(JDBC_DATABASE_URL_ENV);
-            if (databaseUrl == null || databaseUrl.isBlank()) {
+            var appEnv = System.getProperty(APP_ENV_PROPERTY);
+            var isTestEnvironment = TEST_ENV.equals(appEnv);
+            if (isTestEnvironment || databaseUrl == null || databaseUrl.isBlank()) {
                 log.info("Using H2 database");
                 config.setJdbcUrl(H2_JDBC_URL);
                 config.setDriverClassName(H2_DRIVER);
@@ -63,6 +67,13 @@ public final class App {
             Database.applyMigrations(dataSource);
         }
         return dataSource;
+    }
+
+    static void resetDataSource() {
+        if (dataSource != null) {
+            dataSource.close();
+            dataSource = null;
+        }
     }
 
     public static void main(String[] args) {
