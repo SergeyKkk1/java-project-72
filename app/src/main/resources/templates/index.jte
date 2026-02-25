@@ -1,3 +1,5 @@
+@param String flash
+
 <!DOCTYPE html>
 <html lang="ru">
   <head>
@@ -26,6 +28,14 @@
     </style>
   </head>
   <body>
+    <main>
+      @if(flash != null)
+        <div class="container pt-4">
+          <div class="alert alert-info mb-0" role="alert">${flash}</div>
+        </div>
+      @endif
+    </main>
+
     <header class="hero text-light">
       <nav class="navbar navbar-expand-sm navbar-dark">
         <div class="container">

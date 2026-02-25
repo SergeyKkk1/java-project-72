@@ -1,16 +1,20 @@
 package hexlet.code.repository;
 
 import lombok.Getter;
-import lombok.Setter;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
+import java.sql.SQLException;
 
 @Getter
-@Setter
 public abstract class BaseRepository {
-    private Connection connection;
+    private final DataSource dataSource;
 
-    protected BaseRepository(Connection connection) {
-        this.connection = connection;
+    protected BaseRepository(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
+
+    protected Connection getConnection() throws SQLException {
+        return dataSource.getConnection();
     }
 }

@@ -11,3 +11,7 @@ Service link: https://java-project-72-25tn.onrender.com/
 git@github.com:SergeyKkk1/java-project-72.git
 make build
 ```
+
+## Databases
+- Local development: if `JDBC_DATABASE_URL` is not set, the app uses H2 in-memory database.
+- Production (Render): set `JDBC_DATABASE_URL` to your Render Postgres JDBC url.
