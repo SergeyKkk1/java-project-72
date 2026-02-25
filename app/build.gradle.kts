@@ -35,12 +35,14 @@ dependencies {
     implementation("com.h2database:h2:2.4.240")
     implementation("org.postgresql:postgresql:42.7.7")
     implementation("gg.jte:jte:3.1.16")
+    implementation("com.konghq:unirest-java:4.0.0-RC2")
     compileOnly("org.projectlombok:lombok:1.18.42")
     annotationProcessor("org.projectlombok:lombok:1.18.42")
     testCompileOnly("org.projectlombok:lombok:1.18.42")
     testAnnotationProcessor("org.projectlombok:lombok:1.18.42")
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

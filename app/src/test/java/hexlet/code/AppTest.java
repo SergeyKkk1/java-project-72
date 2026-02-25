@@ -1,14 +1,19 @@
 package hexlet.code;
 
 import hexlet.code.model.Url;
+import hexlet.code.model.UrlCheck;
+import hexlet.code.repository.UrlCheckRepository;
 import hexlet.code.repository.UrlRepository;
 import io.javalin.Javalin;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.net.CookieManager;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -17,6 +22,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -27,6 +33,7 @@ final class AppTest {
     private static final String BASE_URL_TEMPLATE = "http://localhost:";
     private static final String ROOT_PATH = "/";
     private static final String URLS_PATH = "/urls";
+    private static final String URLS_CHECKS_PATH = "/checks";
     private static final String FORM_CONTENT_TYPE = "application/x-www-form-urlencoded";
     private static final String FORM_URL_PARAM_PREFIX = "url=";
     private static final String URL_WITH_PATH = "https://some-domain.org/example/path";
@@ -38,20 +45,42 @@ final class AppTest {
     private static final String ADD_SUCCESS_MESSAGE = "Страница успешно добавлена";
     private static final String URL_ALREADY_EXISTS_MESSAGE = "Страница уже существует";
     private static final String INVALID_URL_MESSAGE = "Некорректный URL";
+    private static final String URL_CHECKED_MESSAGE = "Страница успешно проверена";
     private static final String URL_PARAM_NAME = "name=\"url\"";
     private static final String URLS_TITLE = "Сайты";
     private static final String ROOT_PAGE_TITLE = "Анализатор страниц";
     private static final String CONTENT_TYPE_HEADER = "Content-Type";
     private static final String URLS_SHOW_PATH_PREFIX = "/urls/";
+    private static final String MOCK_SERVER_HOST_URL = "http://localhost:";
+    private static final String MOCK_HTML_TITLE = "Mock title";
+    private static final String MOCK_HTML_H1 = "Mock h1";
+    private static final String MOCK_HTML_DESCRIPTION = "Mock description";
+    private static final String MOCK_HTML_BODY = """
+        <html>
+          <head>
+            <title>Mock title</title>
+            <meta name="description" content="Mock description">
+          </head>
+          <body>
+            <h1>Mock h1</h1>
+          </body>
+        </html>
+        """;
+    private static final LocalDateTime FIRST_CHECK_DATE = LocalDateTime.parse("2026-01-01T10:00:00");
+    private static final LocalDateTime SECOND_CHECK_DATE = LocalDateTime.parse("2026-01-01T11:00:00");
     private static final long UNKNOWN_URL_ID = 999_999L;
     private static final int RANDOM_PORT = 0;
     private static final int STATUS_OK = 200;
     private static final int STATUS_NOT_FOUND = 404;
+    private static final int STATUS_CREATED = 201;
+    private static final int STATUS_NO_CONTENT = 204;
 
     private Javalin app;
     private HttpClient client;
     private String baseUrl;
     private UrlRepository urlRepository;
+    private UrlCheckRepository urlCheckRepository;
+    private MockWebServer mockWebServer;
 
     @BeforeAll
     static void beforeAll() {
@@ -75,13 +104,17 @@ final class AppTest {
             .followRedirects(HttpClient.Redirect.NORMAL)
             .build();
         urlRepository = new UrlRepository(App.getDataSource());
-        clearUrls();
+        urlCheckRepository = new UrlCheckRepository(App.getDataSource());
+        clearDatabase();
     }
 
     @AfterEach
-    void tearDown() {
+    void tearDown() throws IOException {
         if (app != null) {
             app.stop();
+        }
+        if (mockWebServer != null) {
+            mockWebServer.shutdown();
         }
     }
 
@@ -150,11 +183,14 @@ final class AppTest {
     @Test
     void testUrlPageShowsStoredUrlById() throws Exception {
         var savedUrl = saveUrl(NORMALIZED_URL);
+        var savedCheck = saveUrlCheck(savedUrl.getId(), STATUS_OK, FIRST_CHECK_DATE);
         var response = sendGetRequest(URLS_PATH + "/" + savedUrl.getId());
 
         assertEquals(STATUS_OK, response.statusCode());
         assertTrue(response.body().contains(savedUrl.getName()));
         assertTrue(response.body().contains(savedUrl.getId().toString()));
+        assertTrue(response.body().contains(savedCheck.getId().toString()));
+        assertTrue(response.body().contains(savedCheck.getCreatedAt().toString()));
     }
 
     @Test
@@ -162,6 +198,53 @@ final class AppTest {
         var response = sendGetRequest(URLS_PATH + "/" + UNKNOWN_URL_ID);
 
         assertEquals(STATUS_NOT_FOUND, response.statusCode());
+    }
+
+    @Test
+    void testCreateCheckSavesPageAvailabilityInfo() throws Exception {
+        startMockWebServer();
+        mockWebServer.enqueue(new MockResponse().setResponseCode(STATUS_OK).setBody(MOCK_HTML_BODY));
+        var savedUrl = saveUrl(MOCK_SERVER_HOST_URL + mockWebServer.getPort());
+
+        var response = sendCreateCheckRequest(savedUrl.getId());
+        var checks = urlCheckRepository.findByUrlId(savedUrl.getId());
+        var savedCheck = checks.getFirst();
+
+        assertEquals(STATUS_OK, response.statusCode());
+        assertTrue(response.uri().getPath().startsWith(URLS_SHOW_PATH_PREFIX));
+        assertTrue(response.body().contains(URL_CHECKED_MESSAGE));
+        assertTrue(response.body().contains(MOCK_HTML_TITLE));
+        assertTrue(response.body().contains(MOCK_HTML_H1));
+        assertTrue(response.body().contains(MOCK_HTML_DESCRIPTION));
+        assertEquals(1, checks.size());
+        assertEquals(STATUS_OK, savedCheck.getStatusCode());
+        assertEquals(MOCK_HTML_TITLE, savedCheck.getTitle());
+        assertEquals(MOCK_HTML_H1, savedCheck.getH1());
+        assertEquals(MOCK_HTML_DESCRIPTION, savedCheck.getDescription());
+    }
+
+    @Test
+    void testCreateCheckReturnsNotFoundForUnknownUrl() throws Exception {
+        var response = sendCreateCheckRequest(UNKNOWN_URL_ID);
+
+        assertEquals(STATUS_NOT_FOUND, response.statusCode());
+    }
+
+    @Test
+    void testUrlsPageShowsLastCheckDateAndStatusCode() throws Exception {
+        var savedUrl = saveUrl(NORMALIZED_URL);
+        saveUrlCheck(savedUrl.getId(), STATUS_CREATED, FIRST_CHECK_DATE);
+        saveUrlCheck(savedUrl.getId(), STATUS_NO_CONTENT, SECOND_CHECK_DATE);
+        var response = sendGetRequest(URLS_PATH);
+
+        assertEquals(STATUS_OK, response.statusCode());
+        assertTrue(response.body().contains(SECOND_CHECK_DATE.toString()));
+        assertTrue(response.body().contains(String.valueOf(STATUS_NO_CONTENT)));
+    }
+
+    private void startMockWebServer() throws IOException {
+        mockWebServer = new MockWebServer();
+        mockWebServer.start();
     }
 
     private HttpResponse<String> sendGetRequest(String path) throws Exception {
@@ -183,15 +266,32 @@ final class AppTest {
         return client.send(request, HttpResponse.BodyHandlers.ofString());
     }
 
+    private HttpResponse<String> sendCreateCheckRequest(Long urlId) throws Exception {
+        var request = HttpRequest.newBuilder()
+            .uri(URI.create(baseUrl + URLS_PATH + "/" + urlId + URLS_CHECKS_PATH))
+            .POST(HttpRequest.BodyPublishers.noBody())
+            .build();
+        return client.send(request, HttpResponse.BodyHandlers.ofString());
+    }
+
     private Url saveUrl(String name) throws SQLException {
         var url = new Url();
         url.setName(name);
         return urlRepository.save(url);
     }
 
-    private void clearUrls() throws SQLException {
+    private UrlCheck saveUrlCheck(Long urlId, int statusCode, LocalDateTime createdAt) throws SQLException {
+        var check = new UrlCheck();
+        check.setUrlId(urlId);
+        check.setStatusCode(statusCode);
+        check.setCreatedAt(createdAt);
+        return urlCheckRepository.save(check);
+    }
+
+    private void clearDatabase() throws SQLException {
         try (var connection = App.getDataSource().getConnection();
              var statement = connection.createStatement()) {
+            statement.executeUpdate("DELETE FROM url_checks");
             statement.executeUpdate("DELETE FROM urls");
         }
     }

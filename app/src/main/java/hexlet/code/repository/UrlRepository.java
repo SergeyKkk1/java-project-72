@@ -16,7 +16,22 @@ public final class UrlRepository extends BaseRepository {
     private static final String SQL_INSERT = "INSERT INTO urls (name, created_at) VALUES (?, ?)";
     private static final String SQL_FIND_BY_ID = "SELECT id, name, created_at FROM urls WHERE id = ?";
     private static final String SQL_FIND_BY_NAME = "SELECT id, name, created_at FROM urls WHERE name = ?";
-    private static final String SQL_FIND_ALL = "SELECT id, name, created_at FROM urls ORDER BY id DESC";
+    private static final String SQL_FIND_ALL = """
+        SELECT u.id, u.name, u.created_at,
+               c.status_code AS last_check_status_code,
+               c.created_at AS last_check_created_at
+        FROM urls u
+        LEFT JOIN (
+            SELECT uc1.url_id, uc1.status_code, uc1.created_at
+            FROM url_checks uc1
+            JOIN (
+                SELECT url_id, MAX(id) AS max_id
+                FROM url_checks
+                GROUP BY url_id
+            ) latest ON latest.max_id = uc1.id
+        ) c ON c.url_id = u.id
+        ORDER BY u.id DESC
+        """;
 
     public UrlRepository(DataSource dataSource) {
         super(dataSource);
@@ -73,7 +88,7 @@ public final class UrlRepository extends BaseRepository {
              var statement = connection.createStatement();
              var resultSet = statement.executeQuery(SQL_FIND_ALL)) {
             while (resultSet.next()) {
-                entities.add(buildUrl(resultSet));
+                entities.add(buildUrlWithLastCheck(resultSet));
             }
         }
         return entities;
@@ -86,6 +101,17 @@ public final class UrlRepository extends BaseRepository {
         var createdAt = resultSet.getTimestamp("created_at");
         if (createdAt != null) {
             url.setCreatedAt(createdAt.toLocalDateTime());
+        }
+        return url;
+    }
+
+    private Url buildUrlWithLastCheck(ResultSet resultSet) throws SQLException {
+        var url = buildUrl(resultSet);
+        url.setLastCheckStatusCode(resultSet.getObject("last_check_status_code", Integer.class));
+
+        var lastCheckCreatedAt = resultSet.getTimestamp("last_check_created_at");
+        if (lastCheckCreatedAt != null) {
+            url.setLastCheckCreatedAt(lastCheckCreatedAt.toLocalDateTime());
         }
         return url;
     }

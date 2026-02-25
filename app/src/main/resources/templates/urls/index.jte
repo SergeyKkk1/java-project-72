@@ -34,7 +34,8 @@
           <tr>
             <th>ID</th>
             <th>Имя</th>
-            <th>Дата создания</th>
+            <th>Последняя проверка</th>
+            <th>Код ответа</th>
           </tr>
         </thead>
         <tbody>
@@ -42,7 +43,8 @@
             <tr>
               <td>${url.getId()}</td>
               <td><a href="/urls/${url.getId()}">${url.getName()}</a></td>
-              <td>${url.getCreatedAt() != null ? url.getCreatedAt().toString() : ""}</td>
+              <td>${url.getLastCheckCreatedAt() != null ? url.getLastCheckCreatedAt().toString() : ""}</td>
+              <td>${url.getLastCheckStatusCode() != null ? url.getLastCheckStatusCode().toString() : ""}</td>
             </tr>
           @endfor
         </tbody>

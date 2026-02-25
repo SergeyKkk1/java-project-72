@@ -26,6 +26,7 @@ public final class App {
     private static final String ROOT_PATH = "/";
     private static final String URLS_PATH = "/urls";
     private static final String URLS_SHOW_PATH = "/urls/{id}";
+    private static final String URLS_CHECKS_PATH = "/urls/{id}/checks";
     private static final String POSTGRES_DRIVER = "org.postgresql.Driver";
 
     private static HikariDataSource dataSource;
@@ -41,6 +42,7 @@ public final class App {
         app.post(URLS_PATH, urlController::create);
         app.get(URLS_PATH, urlController::indexUrls);
         app.get(URLS_SHOW_PATH, urlController::show);
+        app.post(URLS_CHECKS_PATH, urlController::createCheck);
         return app;
     }
 

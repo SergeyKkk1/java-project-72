@@ -1,4 +1,5 @@
 @param hexlet.code.model.Url url
+@param java.util.List<hexlet.code.model.UrlCheck> checks
 @param String flash
 
 <!DOCTYPE html>
@@ -29,6 +30,13 @@
       @endif
 
       <h1 class="mb-4">Сайт: ${url.getName()}</h1>
+
+      <div class="mb-4">
+        <form action="/urls/${url.getId()}/checks" method="post">
+          <button type="submit" class="btn btn-primary">Запустить проверку</button>
+        </form>
+      </div>
+
       <table class="table table-bordered bg-white">
         <tbody>
           <tr>
@@ -43,6 +51,32 @@
             <th scope="row">Дата создания</th>
             <td>${url.getCreatedAt() != null ? url.getCreatedAt().toString() : ""}</td>
           </tr>
+        </tbody>
+      </table>
+
+      <h2 class="h4 mb-3 mt-4">Проверки</h2>
+      <table class="table table-bordered table-hover bg-white">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Код ответа</th>
+            <th>Title</th>
+            <th>H1</th>
+            <th>Description</th>
+            <th>Дата создания</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for(var check : checks)
+            <tr>
+              <td>${check.getId()}</td>
+              <td>${check.getStatusCode()}</td>
+              <td>${check.getTitle() != null ? check.getTitle() : ""}</td>
+              <td>${check.getH1() != null ? check.getH1() : ""}</td>
+              <td>${check.getDescription() != null ? check.getDescription() : ""}</td>
+              <td>${check.getCreatedAt() != null ? check.getCreatedAt().toString() : ""}</td>
+            </tr>
+          @endfor
         </tbody>
       </table>
     </main>

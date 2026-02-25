@@ -5,10 +5,12 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-public final class Url {
+public final class UrlCheck {
     private Long id;
-    private String name;
+    private Integer statusCode;
+    private String title;
+    private String h1;
+    private String description;
+    private Long urlId;
     private LocalDateTime createdAt = LocalDateTime.now();
-    private Integer lastCheckStatusCode;
-    private LocalDateTime lastCheckCreatedAt;
 }
