@@ -46,6 +46,7 @@ final class AppTest {
     private static final String URL_ALREADY_EXISTS_MESSAGE = "Страница уже существует";
     private static final String INVALID_URL_MESSAGE = "Некорректный URL";
     private static final String URL_CHECKED_MESSAGE = "Страница успешно проверена";
+    private static final String URL_CHECK_FAILED_MESSAGE = "Не удалось проверить страницу";
     private static final String URL_PARAM_NAME = "name=\"url\"";
     private static final String URLS_TITLE = "Сайты";
     private static final String ROOT_PAGE_TITLE = "Анализатор страниц";
@@ -69,8 +70,10 @@ final class AppTest {
     private static final LocalDateTime FIRST_CHECK_DATE = LocalDateTime.parse("2026-01-01T10:00:00");
     private static final LocalDateTime SECOND_CHECK_DATE = LocalDateTime.parse("2026-01-01T11:00:00");
     private static final long UNKNOWN_URL_ID = 999_999L;
+    private static final int UNAVAILABLE_PORT = 1;
     private static final int RANDOM_PORT = 0;
     private static final int STATUS_OK = 200;
+    private static final int STATUS_INTERNAL_SERVER_ERROR = 500;
     private static final int STATUS_NOT_FOUND = 404;
     private static final int STATUS_CREATED = 201;
     private static final int STATUS_NO_CONTENT = 204;
@@ -96,6 +99,7 @@ final class AppTest {
 
     @BeforeEach
     void setUp() throws SQLException {
+        App.resetDataSource();
         app = App.getApp();
         app.start(RANDOM_PORT);
         baseUrl = BASE_URL_TEMPLATE + app.port();
@@ -231,6 +235,52 @@ final class AppTest {
     }
 
     @Test
+    void testCreateCheckShowsFailureFlashWhenSiteUnavailable() throws Exception {
+        var savedUrl = saveUrl(MOCK_SERVER_HOST_URL + UNAVAILABLE_PORT);
+        var response = sendCreateCheckRequest(savedUrl.getId());
+
+        assertEquals(STATUS_OK, response.statusCode());
+        assertTrue(response.body().contains(URL_CHECK_FAILED_MESSAGE));
+        assertTrue(urlCheckRepository.findByUrlId(savedUrl.getId()).isEmpty());
+    }
+
+    @Test
+    void testCreateReturnsInternalServerErrorOnDatabaseFailure() throws Exception {
+        dropTable("urls");
+        var response = sendCreateUrlRequest(URL_WITH_PATH);
+
+        assertEquals(STATUS_INTERNAL_SERVER_ERROR, response.statusCode());
+    }
+
+    @Test
+    void testIndexUrlsReturnsInternalServerErrorOnDatabaseFailure() throws Exception {
+        dropTable("url_checks");
+        var response = sendGetRequest(URLS_PATH);
+
+        assertEquals(STATUS_INTERNAL_SERVER_ERROR, response.statusCode());
+    }
+
+    @Test
+    void testShowReturnsInternalServerErrorOnDatabaseFailure() throws Exception {
+        var savedUrl = saveUrl(NORMALIZED_URL);
+        dropTable("url_checks");
+        var response = sendGetRequest(URLS_PATH + "/" + savedUrl.getId());
+
+        assertEquals(STATUS_INTERNAL_SERVER_ERROR, response.statusCode());
+    }
+
+    @Test
+    void testCreateCheckReturnsInternalServerErrorOnDatabaseFailure() throws Exception {
+        startMockWebServer();
+        mockWebServer.enqueue(new MockResponse().setResponseCode(STATUS_OK).setBody(MOCK_HTML_BODY));
+        var savedUrl = saveUrl(MOCK_SERVER_HOST_URL + mockWebServer.getPort());
+        dropTable("url_checks");
+        var response = sendCreateCheckRequest(savedUrl.getId());
+
+        assertEquals(STATUS_INTERNAL_SERVER_ERROR, response.statusCode());
+    }
+
+    @Test
     void testUrlsPageShowsLastCheckDateAndStatusCode() throws Exception {
         var savedUrl = saveUrl(NORMALIZED_URL);
         saveUrlCheck(savedUrl.getId(), STATUS_CREATED, FIRST_CHECK_DATE);
@@ -293,6 +343,13 @@ final class AppTest {
              var statement = connection.createStatement()) {
             statement.executeUpdate("DELETE FROM url_checks");
             statement.executeUpdate("DELETE FROM urls");
+        }
+    }
+
+    private void dropTable(String tableName) throws SQLException {
+        try (var connection = App.getDataSource().getConnection();
+             var statement = connection.createStatement()) {
+            statement.executeUpdate("DROP TABLE " + tableName + " CASCADE");
         }
     }
 }
