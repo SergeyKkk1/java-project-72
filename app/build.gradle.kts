@@ -36,6 +36,7 @@ dependencies {
     implementation("org.postgresql:postgresql:42.7.7")
     implementation("gg.jte:jte:3.1.16")
     implementation("com.konghq:unirest-java:4.0.0-RC2")
+    implementation("org.jsoup:jsoup:1.17.2")
     compileOnly("org.projectlombok:lombok:1.18.42")
     annotationProcessor("org.projectlombok:lombok:1.18.42")
     testCompileOnly("org.projectlombok:lombok:1.18.42")

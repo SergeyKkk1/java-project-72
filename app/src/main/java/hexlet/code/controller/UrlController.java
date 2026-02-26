@@ -8,6 +8,8 @@ import io.javalin.http.Context;
 import kong.unirest.Unirest;
 import kong.unirest.UnirestException;
 import lombok.extern.slf4j.Slf4j;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 
 import javax.sql.DataSource;
 import java.net.URI;
@@ -15,7 +17,6 @@ import java.net.URISyntaxException;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Optional;
-import java.util.regex.Pattern;
 
 @Slf4j
 public final class UrlController {
@@ -37,15 +38,13 @@ public final class UrlController {
     private static final String PATH_PARAM_ID = "id";
     private static final String PAGE_NOT_FOUND_MESSAGE = "Page not found";
     private static final String INTERNAL_SERVER_ERROR_MESSAGE = "Internal Server Error";
+    private static final String H1_SELECTOR = "h1";
+    private static final String META_DESCRIPTION_SELECTOR = "meta[name=description]";
+    private static final String META_CONTENT_ATTRIBUTE = "content";
     private static final int STATUS_NOT_FOUND = 404;
     private static final int STATUS_INTERNAL_SERVER_ERROR = 500;
     private static final long DEFAULT_URL_ID = 0L;
     private static final int URL_DEFAULT_PORT = -1;
-    private static final Pattern TITLE_PATTERN = Pattern.compile("(?is)<title[^>]*>(.*?)</title>");
-    private static final Pattern H1_PATTERN = Pattern.compile("(?is)<h1[^>]*>(.*?)</h1>");
-    private static final Pattern META_TAG_PATTERN = Pattern.compile("(?is)<meta\\s+[^>]*>");
-    private static final Pattern HTML_TAGS_PATTERN = Pattern.compile("(?is)<[^>]+>");
-    private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
 
     private final UrlRepository urlRepository;
     private final UrlCheckRepository urlCheckRepository;
@@ -135,9 +134,7 @@ public final class UrlController {
                 var urlCheck = new UrlCheck();
                 urlCheck.setUrlId(id);
                 urlCheck.setStatusCode(response.getStatus());
-                urlCheck.setTitle(extractTextByPattern(TITLE_PATTERN, response.getBody()).orElse(null));
-                urlCheck.setH1(extractTextByPattern(H1_PATTERN, response.getBody()).orElse(null));
-                urlCheck.setDescription(extractMetaDescription(response.getBody()).orElse(null));
+                fillSeoData(urlCheck, response.getBody());
                 urlCheckRepository.save(urlCheck);
                 ctx.sessionAttribute(FLASH_KEY, URL_CHECKED_MESSAGE);
             } catch (UnirestException e) {
@@ -183,59 +180,31 @@ public final class UrlController {
         }
     }
 
-    private Optional<String> extractTextByPattern(Pattern pattern, String html) {
+    private void fillSeoData(UrlCheck urlCheck, String html) {
         if (html == null || html.isBlank()) {
-            return Optional.empty();
+            return;
         }
 
-        var matcher = pattern.matcher(html);
-        if (!matcher.find()) {
-            return Optional.empty();
+        Document document = Jsoup.parse(html);
+        urlCheck.setTitle(sanitizeText(document.title()));
+
+        var h1Element = document.selectFirst(H1_SELECTOR);
+        if (h1Element != null) {
+            urlCheck.setH1(sanitizeText(h1Element.text()));
         }
 
-        var noTagsText = HTML_TAGS_PATTERN.matcher(matcher.group(1)).replaceAll(" ");
-        return Optional.ofNullable(sanitizeText(noTagsText));
-    }
-
-    private Optional<String> extractMetaDescription(String html) {
-        if (html == null || html.isBlank()) {
-            return Optional.empty();
+        var metaDescriptionElement = document.selectFirst(META_DESCRIPTION_SELECTOR);
+        if (metaDescriptionElement != null) {
+            urlCheck.setDescription(sanitizeText(metaDescriptionElement.attr(META_CONTENT_ATTRIBUTE)));
         }
-
-        var metaMatcher = META_TAG_PATTERN.matcher(html);
-        while (metaMatcher.find()) {
-            var metaTag = metaMatcher.group();
-            var name = extractAttribute(metaTag, "name");
-            if (name.isPresent() && "description".equalsIgnoreCase(name.get())) {
-                return extractAttribute(metaTag, "content").map(this::sanitizeText);
-            }
-        }
-
-        return Optional.empty();
-    }
-
-    private Optional<String> extractAttribute(String tag, String attribute) {
-        var quotedAttribute = Pattern.compile("(?i)\\b" + Pattern.quote(attribute) + "\\s*=\\s*(['\"])(.*?)\\1");
-        var quotedAttributeMatcher = quotedAttribute.matcher(tag);
-        if (quotedAttributeMatcher.find()) {
-            return Optional.ofNullable(quotedAttributeMatcher.group(2).trim());
-        }
-
-        var unquotedAttribute = Pattern.compile("(?i)\\b" + Pattern.quote(attribute) + "\\s*=\\s*([^\\s\"'>/]+)");
-        var unquotedAttributeMatcher = unquotedAttribute.matcher(tag);
-        if (unquotedAttributeMatcher.find()) {
-            return Optional.ofNullable(unquotedAttributeMatcher.group(1).trim());
-        }
-
-        return Optional.empty();
     }
 
     private String sanitizeText(String text) {
-        if (text == null || text.isBlank()) {
+        if (text == null) {
             return null;
         }
 
-        var normalizedWhitespaceText = WHITESPACE_PATTERN.matcher(text).replaceAll(" ").trim();
+        var normalizedWhitespaceText = text.trim().replaceAll("\\s+", " ");
         return normalizedWhitespaceText.isBlank() ? null : normalizedWhitespaceText;
     }
 
