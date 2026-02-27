@@ -5,7 +5,7 @@ COPY app/ ./app/
 RUN chmod +x app/gradlew
 RUN ./app/gradlew -p app --no-daemon installDist
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:21-jdk
 
 WORKDIR /app
 COPY --from=build /home/gradle/src/app/build/install/app/ /app/
