@@ -9,8 +9,10 @@ Service link: https://java-project-72-25tn.onrender.com/
 ## How to start this project.
 ```
 git@github.com:SergeyKkk1/java-project-72.git
-make build
+docker build -t page-analyzer .
+docker run --rm -p 8080:7000 page-analyzer
 ```
+Then you can view this site locally on `http://localhost:8080`
 
 ## Databases
 - Local development: if `JDBC_DATABASE_URL` is not set, the app uses H2 in-memory database.
