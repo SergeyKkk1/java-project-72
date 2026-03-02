@@ -1,5 +1,6 @@
 .git
 .github
 .idea
+.gradle-test
 app/.gradle
 app/build
