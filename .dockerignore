@@ -3,6 +3,14 @@
 !app/
 !app/**
 
+.gradle/
+.gradle-test/
 app/.gradle/
+app/.gradle-test/
 app/build/
+
+jte-classes/
 app/jte-classes/
+
+.idea/
+app/.idea/
