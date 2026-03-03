@@ -1,5 +1,5 @@
 APP_DIR := app
-GRADLE_HOME := $(CURDIR)/$(APP_DIR)/.gradle-local
+GRADLE_HOME := $(CURDIR)/$(APP_DIR)/.gradle
 
 .PHONY: build
 build:
