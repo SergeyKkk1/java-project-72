@@ -7,6 +7,7 @@
 .gradle-test/
 app/.gradle/
 app/.gradle-test/
+app/.gradle-local/
 app/build/
 
 jte-classes/
