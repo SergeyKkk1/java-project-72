@@ -29,7 +29,7 @@
       @endif
 
       <h1 class="mb-4">Сайты</h1>
-      <table class="table table-bordered table-hover bg-white">
+      <table class="table table-bordered table-hover bg-white" data-test="urls">
         <thead>
           <tr>
             <th>ID</th>
