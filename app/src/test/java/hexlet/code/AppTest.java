@@ -52,6 +52,7 @@ final class AppTest {
     private static final String ROOT_PAGE_TITLE = "Анализатор страниц";
     private static final String URL_DETAILS_TABLE_TEST_ATTR = "data-test=\"url\"";
     private static final String URL_CHECKS_TABLE_TEST_ATTR = "data-test=\"checks\"";
+    private static final String ELLIPSIS = "...";
     private static final String CONTENT_TYPE_HEADER = "Content-Type";
     private static final String URLS_SHOW_PATH_PREFIX = "/urls/";
     private static final String MOCK_SERVER_HOST_URL = "http://localhost:";
@@ -255,11 +256,14 @@ final class AppTest {
 
         var response = sendCreateCheckRequest(savedUrl.getId());
         var savedCheck = urlCheckRepository.findByUrlId(savedUrl.getId()).getFirst();
+        var expectedTitle = longTitle.substring(0, SEO_TEXT_LIMIT - ELLIPSIS.length()) + ELLIPSIS;
+        var expectedH1 = longH1.substring(0, SEO_TEXT_LIMIT - ELLIPSIS.length()) + ELLIPSIS;
+        var expectedDescription = longDescription.substring(0, SEO_TEXT_LIMIT - ELLIPSIS.length()) + ELLIPSIS;
 
         assertEquals(STATUS_OK, response.statusCode());
-        assertEquals(longTitle.substring(0, SEO_TEXT_LIMIT), savedCheck.getTitle());
-        assertEquals(longH1.substring(0, SEO_TEXT_LIMIT), savedCheck.getH1());
-        assertEquals(longDescription, savedCheck.getDescription());
+        assertEquals(expectedTitle, savedCheck.getTitle());
+        assertEquals(expectedH1, savedCheck.getH1());
+        assertEquals(expectedDescription, savedCheck.getDescription());
     }
 
     @Test

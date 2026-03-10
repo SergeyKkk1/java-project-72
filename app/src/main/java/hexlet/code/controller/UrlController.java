@@ -29,6 +29,7 @@ public final class UrlController {
     private static final String PAGE_NOT_FOUND_MESSAGE = "Page not found";
     private static final long DEFAULT_URL_ID = 0L;
     private static final int SEO_TEXT_LIMIT = 255;
+    private static final String ELLIPSIS = "...";
 
     private final UrlRepository urlRepository;
     private final UrlCheckRepository urlCheckRepository;
@@ -155,7 +156,7 @@ public final class UrlController {
 
         var metaDescriptionElement = document.selectFirst("meta[name=description]");
         if (metaDescriptionElement != null) {
-            urlCheck.setDescription(sanitizeText(metaDescriptionElement.attr("content")));
+            urlCheck.setDescription(sanitizeText(metaDescriptionElement.attr("content"), SEO_TEXT_LIMIT));
         }
     }
 
@@ -173,9 +174,15 @@ public final class UrlController {
             return null;
         }
 
-        return normalizedWhitespaceText.length() <= maxLength
-                ? normalizedWhitespaceText
-                : normalizedWhitespaceText.substring(0, maxLength);
+        if (normalizedWhitespaceText.length() <= maxLength) {
+            return normalizedWhitespaceText;
+        }
+
+        if (maxLength <= ELLIPSIS.length()) {
+            return ELLIPSIS.substring(0, maxLength);
+        }
+
+        return normalizedWhitespaceText.substring(0, maxLength - ELLIPSIS.length()) + ELLIPSIS;
     }
 
     private Map<String, Object> buildModel(Context ctx) {
