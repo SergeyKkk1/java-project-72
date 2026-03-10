@@ -37,7 +37,7 @@
         </form>
       </div>
 
-      <table class="table table-bordered bg-white">
+      <table class="table table-bordered bg-white" data-test="url">
         <tbody>
           <tr>
             <th scope="row">ID</th>
@@ -55,13 +55,13 @@
       </table>
 
       <h2 class="h4 mb-3 mt-4">Проверки</h2>
-      <table class="table table-bordered table-hover bg-white">
+      <table class="table table-bordered table-hover bg-white" data-test="checks">
         <thead>
           <tr>
             <th>ID</th>
             <th>Код ответа</th>
-            <th>Title</th>
             <th>H1</th>
+            <th>Title</th>
             <th>Description</th>
             <th>Дата создания</th>
           </tr>
@@ -71,8 +71,8 @@
             <tr>
               <td>${check.getId()}</td>
               <td>${check.getStatusCode()}</td>
-              <td>${check.getTitle() != null ? check.getTitle() : ""}</td>
               <td>${check.getH1() != null ? check.getH1() : ""}</td>
+              <td>${check.getTitle() != null ? check.getTitle() : ""}</td>
               <td>${check.getDescription() != null ? check.getDescription() : ""}</td>
               <td>${check.getCreatedAt() != null ? check.getCreatedAt().toString() : ""}</td>
             </tr>

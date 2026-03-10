@@ -50,6 +50,8 @@ final class AppTest {
     private static final String URL_PARAM_NAME = "name=\"url\"";
     private static final String URLS_TITLE = "Сайты";
     private static final String ROOT_PAGE_TITLE = "Анализатор страниц";
+    private static final String URL_DETAILS_TABLE_TEST_ATTR = "data-test=\"url\"";
+    private static final String URL_CHECKS_TABLE_TEST_ATTR = "data-test=\"checks\"";
     private static final String CONTENT_TYPE_HEADER = "Content-Type";
     private static final String URLS_SHOW_PATH_PREFIX = "/urls/";
     private static final String MOCK_SERVER_HOST_URL = "http://localhost:";
@@ -70,6 +72,7 @@ final class AppTest {
     private static final LocalDateTime FIRST_CHECK_DATE = LocalDateTime.parse("2026-01-01T10:00:00");
     private static final LocalDateTime SECOND_CHECK_DATE = LocalDateTime.parse("2026-01-01T11:00:00");
     private static final long UNKNOWN_URL_ID = 999_999L;
+    private static final int SEO_TEXT_LIMIT = 255;
     private static final int UNAVAILABLE_PORT = 1;
     private static final int RANDOM_PORT = 0;
     private static final int STATUS_OK = 200;
@@ -191,6 +194,8 @@ final class AppTest {
         var response = sendGetRequest(URLS_PATH + "/" + savedUrl.getId());
 
         assertEquals(STATUS_OK, response.statusCode());
+        assertTrue(response.body().contains(URL_DETAILS_TABLE_TEST_ATTR));
+        assertTrue(response.body().contains(URL_CHECKS_TABLE_TEST_ATTR));
         assertTrue(response.body().contains(savedUrl.getName()));
         assertTrue(response.body().contains(savedUrl.getId().toString()));
         assertTrue(response.body().contains(savedCheck.getId().toString()));
@@ -225,6 +230,36 @@ final class AppTest {
         assertEquals(MOCK_HTML_TITLE, savedCheck.getTitle());
         assertEquals(MOCK_HTML_H1, savedCheck.getH1());
         assertEquals(MOCK_HTML_DESCRIPTION, savedCheck.getDescription());
+    }
+
+    @Test
+    void testCreateCheckTruncatesSeoFieldsToDatabaseLimits() throws Exception {
+        var longTitle = "t".repeat(SEO_TEXT_LIMIT + 10);
+        var longH1 = "h".repeat(SEO_TEXT_LIMIT + 20);
+        var longDescription = "d".repeat(SEO_TEXT_LIMIT + 30);
+        var html = """
+            <html>
+              <head>
+                <title>%s</title>
+                <meta name="description" content="%s">
+              </head>
+              <body>
+                <h1>%s</h1>
+              </body>
+            </html>
+            """.formatted(longTitle, longDescription, longH1);
+
+        startMockWebServer();
+        mockWebServer.enqueue(new MockResponse().setResponseCode(STATUS_OK).setBody(html));
+        var savedUrl = saveUrl(MOCK_SERVER_HOST_URL + mockWebServer.getPort());
+
+        var response = sendCreateCheckRequest(savedUrl.getId());
+        var savedCheck = urlCheckRepository.findByUrlId(savedUrl.getId()).getFirst();
+
+        assertEquals(STATUS_OK, response.statusCode());
+        assertEquals(longTitle.substring(0, SEO_TEXT_LIMIT), savedCheck.getTitle());
+        assertEquals(longH1.substring(0, SEO_TEXT_LIMIT), savedCheck.getH1());
+        assertEquals(longDescription, savedCheck.getDescription());
     }
 
     @Test

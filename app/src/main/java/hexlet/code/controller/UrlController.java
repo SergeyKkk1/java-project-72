@@ -28,6 +28,7 @@ public final class UrlController {
     private static final String PATH_PARAM_ID = "id";
     private static final String PAGE_NOT_FOUND_MESSAGE = "Page not found";
     private static final long DEFAULT_URL_ID = 0L;
+    private static final int SEO_TEXT_LIMIT = 255;
 
     private final UrlRepository urlRepository;
     private final UrlCheckRepository urlCheckRepository;
@@ -145,11 +146,11 @@ public final class UrlController {
         }
 
         Document document = Jsoup.parse(html);
-        urlCheck.setTitle(sanitizeText(document.title()));
+        urlCheck.setTitle(sanitizeText(document.title(), SEO_TEXT_LIMIT));
 
         var h1Element = document.selectFirst("h1");
         if (h1Element != null) {
-            urlCheck.setH1(sanitizeText(h1Element.text()));
+            urlCheck.setH1(sanitizeText(h1Element.text(), SEO_TEXT_LIMIT));
         }
 
         var metaDescriptionElement = document.selectFirst("meta[name=description]");
@@ -159,12 +160,22 @@ public final class UrlController {
     }
 
     private String sanitizeText(String text) {
+        return sanitizeText(text, Integer.MAX_VALUE);
+    }
+
+    private String sanitizeText(String text, int maxLength) {
         if (text == null) {
             return null;
         }
 
         var normalizedWhitespaceText = text.trim().replaceAll("\\s+", " ");
-        return normalizedWhitespaceText.isBlank() ? null : normalizedWhitespaceText;
+        if (normalizedWhitespaceText.isBlank()) {
+            return null;
+        }
+
+        return normalizedWhitespaceText.length() <= maxLength
+                ? normalizedWhitespaceText
+                : normalizedWhitespaceText.substring(0, maxLength);
     }
 
     private Map<String, Object> buildModel(Context ctx) {
