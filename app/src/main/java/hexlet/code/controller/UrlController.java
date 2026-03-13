@@ -147,11 +147,14 @@ public final class UrlController {
         }
 
         Document document = Jsoup.parse(html);
-        urlCheck.setTitle(sanitizeText(document.title(), SEO_TEXT_LIMIT));
+        var titleElement = document.selectFirst("title");
+        if (titleElement != null) {
+            urlCheck.setTitle(sanitizeText(titleElement.wholeText(), SEO_TEXT_LIMIT));
+        }
 
         var h1Element = document.selectFirst("h1");
         if (h1Element != null) {
-            urlCheck.setH1(sanitizeText(h1Element.text(), SEO_TEXT_LIMIT));
+            urlCheck.setH1(sanitizeText(h1Element.wholeText(), SEO_TEXT_LIMIT));
         }
 
         var metaDescriptionElement = document.selectFirst("meta[name=description]");
@@ -165,20 +168,23 @@ public final class UrlController {
             return null;
         }
 
-        var normalizedText = text.trim();
-        if (normalizedText.isBlank()) {
+        var trimmedText = text.trim();
+        if (trimmedText.isBlank()) {
             return null;
-        }
-
-        if (normalizedText.length() < maxLength) {
-            return normalizedText;
         }
 
         if (maxLength <= ELLIPSIS.length()) {
             return ELLIPSIS.substring(0, maxLength);
         }
 
-        return normalizedText.substring(0, maxLength - ELLIPSIS.length()) + ELLIPSIS;
+        var normalizedText = trimmedText.replaceAll("\\s+", " ");
+        var shouldTruncate = trimmedText.length() >= maxLength || normalizedText.length() >= maxLength;
+        if (!shouldTruncate) {
+            return normalizedText;
+        }
+
+        var prefixLength = Math.min(maxLength - ELLIPSIS.length(), normalizedText.length());
+        return normalizedText.substring(0, prefixLength) + ELLIPSIS;
     }
 
     private Map<String, Object> buildModel(Context ctx) {

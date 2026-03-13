@@ -74,6 +74,9 @@ final class AppTest {
     private static final LocalDateTime SECOND_CHECK_DATE = LocalDateTime.parse("2026-01-01T11:00:00");
     private static final long UNKNOWN_URL_ID = 999_999L;
     private static final int SEO_TEXT_LIMIT = 255;
+    private static final int TITLE_OVERFLOW_EXTRA = 10;
+    private static final int H1_OVERFLOW_EXTRA = 20;
+    private static final int DESCRIPTION_OVERFLOW_EXTRA = 30;
     private static final int UNAVAILABLE_PORT = 1;
     private static final int RANDOM_PORT = 0;
     private static final int STATUS_OK = 200;
@@ -235,12 +238,9 @@ final class AppTest {
 
     @Test
     void testCreateCheckTruncatesSeoFieldsToDatabaseLimits() throws Exception {
-        int titleRepeat = 10;
-        int h1Repeat = 20;
-        int descriptionRepeat = 30;
-        var longTitle = "t".repeat(SEO_TEXT_LIMIT + titleRepeat);
-        var longH1 = "h".repeat(SEO_TEXT_LIMIT + h1Repeat);
-        var longDescription = "d".repeat(SEO_TEXT_LIMIT + descriptionRepeat);
+        var longTitle = "t".repeat(SEO_TEXT_LIMIT + TITLE_OVERFLOW_EXTRA);
+        var longH1 = "h".repeat(SEO_TEXT_LIMIT + H1_OVERFLOW_EXTRA);
+        var longDescription = "d".repeat(SEO_TEXT_LIMIT + DESCRIPTION_OVERFLOW_EXTRA);
         var html = """
             <html>
               <head>
