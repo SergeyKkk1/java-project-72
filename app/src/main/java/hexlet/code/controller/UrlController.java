@@ -24,11 +24,14 @@ import java.util.Optional;
 @Slf4j
 public final class UrlController {
     private static final String FLASH_KEY = "flash";
+    private static final String INDEX_TEMPLATE = "index.jte";
     private static final String URLS_PATH = "/urls";
     private static final String PATH_PARAM_ID = "id";
     private static final String PAGE_NOT_FOUND_MESSAGE = "Page not found";
+    private static final String INVALID_URL_MESSAGE = "Некорректный URL";
     private static final long DEFAULT_URL_ID = 0L;
     private static final int SEO_TEXT_LIMIT = 200;
+    private static final int STATUS_UNPROCESSABLE_ENTITY = 422;
     private static final String ELLIPSIS = "...";
 
     private final UrlRepository urlRepository;
@@ -40,7 +43,7 @@ public final class UrlController {
     }
 
     public void index(Context ctx) {
-        ctx.render("index.jte", buildModel(ctx));
+        ctx.render(INDEX_TEMPLATE, buildModel(ctx));
     }
 
     public void create(Context ctx) throws MalformedURLException, URISyntaxException {
@@ -65,8 +68,7 @@ public final class UrlController {
             }
         }, () -> {
             log.debug("Invalid URL: {}", inputUrl);
-            ctx.sessionAttribute(FLASH_KEY, "Некорректный URL");
-            ctx.redirect("/");
+            renderInvalidUrlResponse(ctx);
         });
     }
 
@@ -191,5 +193,11 @@ public final class UrlController {
         var model = new HashMap<String, Object>();
         model.put("flash", ctx.consumeSessionAttribute(FLASH_KEY));
         return model;
+    }
+
+    private void renderInvalidUrlResponse(Context ctx) {
+        var model = new HashMap<String, Object>();
+        model.put("flash", INVALID_URL_MESSAGE);
+        ctx.status(STATUS_UNPROCESSABLE_ENTITY).render(INDEX_TEMPLATE, model);
     }
 }

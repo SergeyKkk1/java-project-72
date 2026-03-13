@@ -84,6 +84,7 @@ final class AppTest {
     private static final int STATUS_NOT_FOUND = 404;
     private static final int STATUS_CREATED = 201;
     private static final int STATUS_NO_CONTENT = 204;
+    private static final int STATUS_UNPROCESSABLE_ENTITY = 422;
 
     private Javalin app;
     private HttpClient client;
@@ -162,8 +163,8 @@ final class AppTest {
     void testCreateInvalidUrlShowsFlashMessage() throws Exception {
         var response = sendCreateUrlRequest(INVALID_URL);
 
-        assertEquals(STATUS_OK, response.statusCode());
-        assertEquals(ROOT_PATH, response.uri().getPath());
+        assertEquals(STATUS_UNPROCESSABLE_ENTITY, response.statusCode());
+        assertEquals(URLS_PATH, response.uri().getPath());
         assertTrue(response.body().contains(INVALID_URL_MESSAGE));
         assertTrue(urlRepository.getEntities().isEmpty());
     }

@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.sql.SQLException;
+import java.util.Map;
 
 @Slf4j
 public final class App {
@@ -31,6 +32,10 @@ public final class App {
     private static final int DB_MIN_IDLE = 1;
     private static final String POSTGRES_DRIVER = "org.postgresql.Driver";
     private static final String INTERNAL_SERVER_ERROR_MESSAGE = "Internal Server Error";
+    private static final String INDEX_TEMPLATE = "index.jte";
+    private static final String FLASH_KEY = "flash";
+    private static final String INVALID_URL_MESSAGE = "Некорректный URL";
+    private static final int STATUS_UNPROCESSABLE_ENTITY = 422;
 
     private static HikariDataSource dataSource;
 
@@ -100,8 +105,7 @@ public final class App {
 
     private static void handleInvalidUrlException(Exception e, Context ctx) {
         log.debug("Invalid URL while processing {} {}", ctx.method(), ctx.path(), e);
-        ctx.sessionAttribute("flash", "Некорректный URL");
-        ctx.redirect("/");
+        ctx.status(STATUS_UNPROCESSABLE_ENTITY).render(INDEX_TEMPLATE, Map.of(FLASH_KEY, INVALID_URL_MESSAGE));
     }
 
     private static TemplateEngine createTemplateEngine() {
