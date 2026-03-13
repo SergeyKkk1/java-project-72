@@ -165,20 +165,20 @@ public final class UrlController {
             return null;
         }
 
-        var normalizedWhitespaceText = text.trim().replaceAll("\\s+", " ");
-        if (normalizedWhitespaceText.isBlank()) {
+        var normalizedText = text.trim();
+        if (normalizedText.isBlank()) {
             return null;
         }
 
-        if (normalizedWhitespaceText.length() < maxLength) {
-            return normalizedWhitespaceText;
+        if (normalizedText.length() < maxLength) {
+            return normalizedText;
         }
 
         if (maxLength <= ELLIPSIS.length()) {
             return ELLIPSIS.substring(0, maxLength);
         }
 
-        return normalizedWhitespaceText.substring(0, maxLength - ELLIPSIS.length()) + ELLIPSIS;
+        return normalizedText.substring(0, maxLength - ELLIPSIS.length()) + ELLIPSIS;
     }
 
     private Map<String, Object> buildModel(Context ctx) {
