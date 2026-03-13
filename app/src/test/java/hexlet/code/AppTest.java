@@ -235,9 +235,12 @@ final class AppTest {
 
     @Test
     void testCreateCheckTruncatesSeoFieldsToDatabaseLimits() throws Exception {
-        var longTitle = "t".repeat(SEO_TEXT_LIMIT + 10);
-        var longH1 = "h".repeat(SEO_TEXT_LIMIT + 20);
-        var longDescription = "d".repeat(SEO_TEXT_LIMIT + 30);
+        int titleRepeat = 10;
+        int h1Repeat = 20;
+        int descriptionRepeat = 30;
+        var longTitle = "t".repeat(SEO_TEXT_LIMIT + titleRepeat);
+        var longH1 = "h".repeat(SEO_TEXT_LIMIT + h1Repeat);
+        var longDescription = "d".repeat(SEO_TEXT_LIMIT + descriptionRepeat);
         var html = """
             <html>
               <head>

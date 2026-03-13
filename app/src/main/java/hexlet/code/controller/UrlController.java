@@ -160,10 +160,6 @@ public final class UrlController {
         }
     }
 
-    private String sanitizeText(String text) {
-        return sanitizeText(text, Integer.MAX_VALUE);
-    }
-
     private String sanitizeText(String text, int maxLength) {
         if (text == null) {
             return null;
@@ -174,7 +170,7 @@ public final class UrlController {
             return null;
         }
 
-        if (normalizedWhitespaceText.length() <= maxLength) {
+        if (normalizedWhitespaceText.length() < maxLength) {
             return normalizedWhitespaceText;
         }
 
