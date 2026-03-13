@@ -46,7 +46,7 @@ final class AppTest {
     private static final String URL_ALREADY_EXISTS_MESSAGE = "Страница уже существует";
     private static final String INVALID_URL_MESSAGE = "Некорректный URL";
     private static final String URL_CHECKED_MESSAGE = "Страница успешно проверена";
-    private static final String URL_CHECK_FAILED_MESSAGE = "Не удалось проверить страницу";
+    private static final String URL_CHECK_FAILED_MESSAGE = "Произошла ошибка при проверке";
     private static final String URL_PARAM_NAME = "name=\"url\"";
     private static final String URLS_TITLE = "Сайты";
     private static final String ROOT_PAGE_TITLE = "Анализатор страниц";

@@ -24,6 +24,8 @@ import java.util.Optional;
 @Slf4j
 public final class UrlController {
     private static final String FLASH_KEY = "flash";
+    private static final String CHECK_SUCCESS_MESSAGE = "Страница успешно проверена";
+    private static final String CHECK_FAILURE_MESSAGE = "Произошла ошибка при проверке";
     private static final String INDEX_TEMPLATE = "index.jte";
     private static final String URLS_PATH = "/urls";
     private static final String PATH_PARAM_ID = "id";
@@ -102,15 +104,21 @@ public final class UrlController {
 
         try {
             var response = Unirest.get(url.get().getName()).asString();
+            if (!response.isSuccess()) {
+                log.warn("URL check returned non-success status {} for {}", response.getStatus(), url.get().getName());
+                ctx.sessionAttribute(FLASH_KEY, CHECK_FAILURE_MESSAGE);
+                ctx.redirect(URLS_PATH + "/" + id);
+                return;
+            }
             var urlCheck = new UrlCheck();
             urlCheck.setUrlId(id);
             urlCheck.setStatusCode(response.getStatus());
             fillSeoData(urlCheck, response.getBody());
             urlCheckRepository.save(urlCheck);
-            ctx.sessionAttribute(FLASH_KEY, "Страница успешно проверена");
+            ctx.sessionAttribute(FLASH_KEY, CHECK_SUCCESS_MESSAGE);
         } catch (UnirestException e) {
             log.error("Failed to check URL {}", url.get().getName(), e);
-            ctx.sessionAttribute(FLASH_KEY, "Не удалось проверить страницу");
+            ctx.sessionAttribute(FLASH_KEY, CHECK_FAILURE_MESSAGE);
         }
 
         ctx.redirect(URLS_PATH + "/" + id);
