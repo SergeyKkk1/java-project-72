@@ -73,7 +73,7 @@ final class AppTest {
     private static final LocalDateTime FIRST_CHECK_DATE = LocalDateTime.parse("2026-01-01T10:00:00");
     private static final LocalDateTime SECOND_CHECK_DATE = LocalDateTime.parse("2026-01-01T11:00:00");
     private static final long UNKNOWN_URL_ID = 999_999L;
-    private static final int SEO_TEXT_LIMIT = 255;
+    private static final int SEO_TEXT_LIMIT = 200;
     private static final int TITLE_OVERFLOW_EXTRA = 10;
     private static final int H1_OVERFLOW_EXTRA = 20;
     private static final int DESCRIPTION_OVERFLOW_EXTRA = 30;

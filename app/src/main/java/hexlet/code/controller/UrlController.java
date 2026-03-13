@@ -28,7 +28,7 @@ public final class UrlController {
     private static final String PATH_PARAM_ID = "id";
     private static final String PAGE_NOT_FOUND_MESSAGE = "Page not found";
     private static final long DEFAULT_URL_ID = 0L;
-    private static final int SEO_TEXT_LIMIT = 255;
+    private static final int SEO_TEXT_LIMIT = 200;
     private static final String ELLIPSIS = "...";
 
     private final UrlRepository urlRepository;
